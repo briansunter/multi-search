@@ -1,0 +1,62 @@
+{
+  "$schema": "./docs/config/config.schema.json",
+  "defaultEngineOrder": ["searxng", "tavily", "brave", "linkup"],
+  "engines": [
+    {
+      "id": "searxng",
+      "type": "searchxng",
+      "enabled": true,
+      "displayName": "SearXNG (Local)",
+      "apiKeyEnv": "SEARXNG_API_KEY",
+      "endpoint": "http://localhost:8888/search",
+      "defaultLimit": 10,
+      "monthlyQuota": 10000,
+      "creditCostPerSearch": 0,
+      "lowCreditThresholdPercent": 0,
+      "autoStart": true,
+      "autoStop": true,
+      "composeFile": "./providers/searxng/docker-compose.yml",
+      "containerName": "searxng",
+      "healthEndpoint": "http://localhost:8888/healthz",
+      "initTimeoutMs": 60000
+    },
+    {
+      "id": "tavily",
+      "type": "tavily",
+      "enabled": true,
+      "displayName": "Tavily Search",
+      "apiKeyEnv": "TAVILY_API_KEY",
+      "endpoint": "https://api.tavily.com/search",
+      "searchDepth": "basic",
+      "monthlyQuota": 1000,
+      "creditCostPerSearch": 1,
+      "lowCreditThresholdPercent": 80
+    },
+    {
+      "id": "brave",
+      "type": "brave",
+      "enabled": true,
+      "displayName": "Brave Search",
+      "apiKeyEnv": "BRAVE_API_KEY",
+      "endpoint": "https://api.search.brave.com/res/v1/web/search",
+      "defaultLimit": 10,
+      "monthlyQuota": 1000,
+      "creditCostPerSearch": 1,
+      "lowCreditThresholdPercent": 80
+    },
+    {
+      "id": "linkup",
+      "type": "linkup",
+      "enabled": true,
+      "displayName": "Linkup Search",
+      "apiKeyEnv": "LINKUP_API_KEY",
+      "endpoint": "https://api.linkup.so/v1/search",
+      "monthlyQuota": 1000,
+      "creditCostPerSearch": 1,
+      "lowCreditThresholdPercent": 80
+    }
+  ],
+  "storage": {
+    "creditStatePath": "~/.local/state/multi-search/credits.json"
+  }
+}

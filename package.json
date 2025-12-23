@@ -1,0 +1,42 @@
+{
+  "name": "multi-search",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "multi-search": "src/cli.ts"
+  },
+  "exports": {
+    ".": {
+      "import": "./src/index.ts"
+    },
+    "./cli": "./src/cli.ts",
+    "./config": "./src/config/defineConfig.ts",
+    "./types": "./src/app/index.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.8",
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "zod": "^4.1.12"
+  },
+  "scripts": {
+    "lint": "bunx biome check .",
+    "lint:fix": "bunx biome check --write .",
+    "format": "bunx biome format --write .",
+    "test": "SKIP_DOCKER_TESTS=true bun test --preload ./test/setup.ts test/",
+    "test:unit": "bun test --preload ./test/setup.ts test/unit/",
+    "test:integration": "bun test --preload ./test/setup.ts test/integration/",
+    "test:e2e": "bun test --preload ./test/setup.ts test/e2e/",
+    "test:coverage": "SKIP_DOCKER_TESTS=true bun test --preload ./test/setup.ts --coverage test/",
+    "test:watch": "SKIP_DOCKER_TESTS=true bun test --preload ./test/setup.ts --watch test/",
+    "test:verbose": "DEBUG_TESTS=1 SKIP_DOCKER_TESTS=true bun test --preload ./test/setup.ts test/",
+    "test:docker": "SKIP_DOCKER_TESTS=false bun test --preload ./test/setup.ts test/integration/",
+    "mcp": "bun run mcp-server.ts",
+    "mcp:test": "bun run scripts/test-mcp.ts"
+  }
+}

@@ -1,0 +1,10 @@
+# Limiter configuration for SearXNG
+# Disables bot detection for localhost
+
+[botdetection.ip_lists]
+# Allow localhost without restrictions
+pass_ip = [
+  "127.0.0.1",
+  "::1",
+  "localhost"
+]

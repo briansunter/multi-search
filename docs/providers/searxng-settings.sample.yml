@@ -1,0 +1,174 @@
+server:
+  secret_key: "{{ SEARXNG_SECRET_KEY }}"
+  limiter: false # Disable rate limiting for local use
+  image_proxy: true
+
+ui:
+  static_use_hash: true
+  theme_args:
+    oscar_style: logicodev # Good readability
+
+search:
+  safe_search: 0
+  autocomplete: "" # Leave empty for no autocomplete
+  default_lang: "auto"
+  formats:
+    - html
+    - json
+  max_page: 3 # Search up to 3 pages per engine
+  query_in_title: true
+  query_in_description: true
+  categories_order:
+    ["general", "it", "news", "map", "images", "videos", "files"]
+
+engines:
+  # --- Popular AI/ML Resources ---
+  - name: huggingface
+    engine: huggingface
+    categories: it
+    disabled: false
+
+  - name: github
+    engine: github
+    categories: it
+    disabled: false
+    search_type: "Repositories"
+
+  - name: arxiv
+    engine: arxiv
+    categories: science
+    disabled: false
+
+  - name: npm
+    engine: npm
+    categories: it
+    disabled: false
+
+  - name: pypi
+    engine: pypi
+    categories: it
+    disabled: false
+
+  # --- AI Agent Frameworks ---
+  - name: crewai
+    engine: github
+    categories: it
+    disabled: false
+    search_type: "Repositories"
+    base_url: https://github.com/crewAIInc
+
+  - name: langchain
+    engine: github
+    categories: it
+    disabled: false
+    search_type: "Repositories"
+    base_url: https://github.com/langchain-ai
+
+  - name: autogen
+    engine: github
+    categories: it
+    disabled: false
+    search_type: "Repositories"
+    base_url: https://github.com/microsoft
+
+  - name: openai-swarm
+    engine: github
+    categories: it
+    disabled: false
+    search_type: "Repositories"
+    base_url: https://github.com/openai
+
+  - name: phidata
+    engine: github
+    categories: it
+    disabled: false
+    search_type: "Repositories"
+    base_url: https://github.com/phidatahq
+
+  - name: llamaindex
+    engine: github
+    categories: it
+    disabled: false
+    search_type: "Repositories"
+    base_url: https://github.com/run-llama
+
+  # --- Search Engines ---
+  - name: brave
+    engine: brave
+    categories: general
+    disabled: false
+
+  - name: duckduckgo
+    engine: duckduckgo
+    categories: general
+    disabled: false
+
+  - name: startpage
+    engine: startpage
+    categories: general
+    disabled: false
+
+  - name: qwant
+    engine: qwant
+    categories: general
+    disabled: false
+
+  # --- Academic/Technical ---
+  - name: google scholar
+    engine: google_scholar
+    categories: science
+    disabled: false
+
+  - name: wikipedia
+    engine: wikipedia
+    disabled: false
+
+  - name: stackoverflow
+    engine: stackoverflow
+    categories: it
+    disabled: false
+
+  # --- Documentation ---
+  - name: devdocs
+    engine: devdocs
+    categories: it
+    disabled: false
+
+  - name: mozilla
+    engine: mozilla
+    categories: it
+    disabled: false
+
+  - name: python docs
+    engine: python_docs
+    categories: it
+    disabled: false
+
+  # --- News ---
+  - name: bbc
+    engine: bbc_co_uk
+    categories: news
+    disabled: false
+
+  - name: hacker news
+    engine: hacker_news
+    categories: news
+    disabled: false
+
+  - name: reddit
+    engine: reddit
+    categories: news
+    disabled: false
+
+  # --- Media ---
+  - name: youtube
+    engine: youtube_api
+    categories: videos
+    disabled: false
+
+outgoing:
+  request_timeout: 10.0 # 10 seconds timeout for requests
+  enable_http2: true
+  pool_connections: 100
+  pool_maxsize: 10
+  retries: 1

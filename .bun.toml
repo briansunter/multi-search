@@ -1,0 +1,13 @@
+[test]
+coverage = true
+coverageThreshold = 90
+
+[test.coverage]
+exclude = [
+  "node_modules/**",
+  "test/**",
+  "scripts/**",
+  "coverage/**",
+  "*.config.ts",
+  "*.config.js",
+]

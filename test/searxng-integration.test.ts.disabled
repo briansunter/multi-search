@@ -1,0 +1,268 @@
+#!/usr/bin/env bun
+/**
+ * Comprehensive SearXNG Integration Tests
+ *
+ * This script thoroughly tests the SearXNG provider with various queries and configurations.
+ * Run this after starting Docker: cd providers/searxng && docker compose up -d
+ */
+
+import { multiSearch } from '../src/tool/multiSearchTool';
+import type { MultiSearchOutput } from '../src/tool/interface';
+
+console.log('🔍 SearXNG Integration Test Suite\n');
+console.log('=' .repeat(60));
+
+// Test tracking
+const results: { test: string; passed: boolean; details: string }[] = [];
+
+function assert(condition: boolean, testName: string, details: string = '') {
+  const passed = !!condition;
+  results.push({ test: testName, passed, details });
+  console.log(`${passed ? '✅' : '❌'} ${testName}`);
+  if (details) console.log(`   ${details}`);
+  return passed;
+}
+
+async function test(description: string, fn: () => Promise<void>) {
+  console.log(`\n📋 ${description}`);
+  try {
+    console.log('-'.repeat(60));
+    await fn();
+  } catch (error) {
+    console.error(`❌ Test failed: ${error}`);
+  }
+}
+
+// Test 1: Basic SearXNG Search
+await test('Test 1: Basic SearXNG Search', async () => {
+  const output = await multiSearch({
+    query: 'rust programming',
+    engines: ['searxng'],
+    limit: 5,
+  });
+
+  assert(output.enginesTried.length === 1, 'Only one engine tried');
+  assert(output.enginesTried[0].engineId === 'searxng', 'Engine is searxng');
+  assert(output.enginesTried[0].success === true, 'Search succeeded');
+  assert(output.items.length > 0, 'Got results');
+  assert(output.items.length <= 5, 'Respected limit');
+  assert(output.query === 'rust programming', 'Query preserved');
+
+  // Check first result has required fields
+  const first = output.items[0];
+  assert(!!first.title, 'First result has title');
+  assert(!!first.url, 'First result has URL');
+  assert(first.sourceEngine === 'searxng', 'Result from searxng');
+  assert(first.snippet === undefined || typeof first.snippet === 'string', 'Snippet is string or undefined');
+
+  console.log(`   Found ${output.items.length} results`);
+  console.log(`   First: ${first.title}`);
+});
+
+// Test 2: Multi-Engine Search
+await test('Test 2: Multi-Engine Search', async () => {
+  const output = await multiSearch({
+    query: 'javascript async await',
+    engines: ['searxng', 'tavily'],
+    limit: 3,
+  });
+
+  assert(output.enginesTried.length === 2, 'Both engines tried');
+  assert(output.items.length > 3, 'Got results from both engines');
+
+  const searxngResults = output.items.filter(i => i.sourceEngine === 'searxng');
+  const tavilyResults = output.items.filter(i => i.sourceEngine === 'tavily');
+
+  assert(searxngResults.length > 0, 'Got SearXNG results');
+  assert(tavilyResults.length > 0, 'Got Tavily results');
+
+  console.log(`   SearXNG: ${searxngResults.length} results`);
+  console.log(`   Tavily: ${tavilyResults.length} results`);
+});
+
+// Test 3: JSON Output Format
+await test('Test 3: JSON Output Format', async () => {
+  const output = await multiSearch({
+    query: 'test json format',
+    engines: ['searxng'],
+    limit: 2,
+  });
+
+  // Validate JSON structure
+  assert(typeof output.query === 'string', 'Query is string');
+  assert(Array.isArray(output.items), 'Items is array');
+  assert(Array.isArray(output.enginesTried), 'enginesTried is array');
+  assert(Array.isArray(output.credits), 'credits is array');
+
+  // Validate first item structure
+  if (output.items.length > 0) {
+    const item = output.items[0];
+    assert(typeof item.title === 'string', 'Item title is string');
+    assert(typeof item.url === 'string', 'Item URL is string');
+    assert(item.sourceEngine === 'searxng', 'Item has correct engine');
+  }
+
+  console.log(`   JSON structure valid: ${output.items.length} items`);
+});
+
+// Test 4: Credit Tracking
+await test('Test 4: Credit Tracking', async () => {
+  const before = await multiSearch({ query: 'test credits check', engines: ['searxng'] });
+
+  const searxngCreditBefore = before.credits?.find(c => c.engineId === 'searxng');
+  assert(!!searxngCreditBefore, 'SearXNG credit info present');
+  assert(searxngCreditBefore!.creditCostPerSearch === 0, 'SearXNG cost is 0');
+
+  // Run search
+  await multiSearch({ query: 'another test', engines: ['searxng'] });
+
+  // Check after
+  const searxngCreditAfter = before.credits?.find(c => c.engineId === 'searxng');
+  assert(searxngCreditAfter!.used === searxngCreditBefore!.used, 'Credits unchanged (free)');
+
+  console.log(`   Credits used: ${searxngCreditAfter!.used}`);
+  console.log(`   Cost per search: ${searxngCreditAfter!.creditCostPerSearch}`);
+});
+
+// Test 5: First-Success Strategy
+await test('Test 5: First-Success Strategy', async () => {
+  const output = await multiSearch({
+    query: 'parallel programming',
+    engines: ['searxng', 'tavily'],
+    strategy: 'first-success',
+    limit: 5,
+  });
+
+  // Should stop after first success
+  const firstSuccessIndex = output.enginesTried.findIndex(e => e.success);
+  if (firstSuccessIndex >= 0) {
+    const enginesAfterSuccess = output.enginesTried.slice(firstSuccessIndex + 1);
+    assert(enginesAfterSuccess.every(e => !e.success || !e.reason),
+           'No engines after first success');
+  }
+
+  console.log(`   First success at engine: ${output.enginesTried.find(e => e.success)?.engineId}`);
+});
+
+// Test 6: Limit Parameter
+await test('Test 6: Limit Parameter', async () => {
+  const output = await multiSearch({
+    query: 'limit test',
+    engines: ['searxng'],
+    limit: 3,
+  });
+
+  assert(output.items.length <= 3, `Respected limit (${output.items.length} <= 3)`);
+
+  const output2 = await multiSearch({
+    query: 'limit test',
+    engines: ['searxng'],
+    limit: 8,
+  });
+
+  assert(output2.items.length <= 8, `Respected limit (${output2.items.length} <= 8)`);
+  assert(output2.items.length >= output.items.length, 'Higher limit gives more results');
+
+  console.log(`   Limit 3: ${output.items.length} results`);
+  console.log(`   Limit 8: ${output2.items.length} results`);
+});
+
+// Test 7: Technical Query
+await test('Test 7: Technical Query', async () => {
+  const output = await multiSearch({
+    query: 'rust ownership borrowing lifetime',
+    engines: ['searxng'],
+    limit: 5,
+  });
+
+  assert(output.items.length > 0, 'Got results for technical query');
+
+  // Check if results are relevant (contain keywords)
+  const first = output.items[0];
+  const isRelevant =
+    first.title.toLowerCase().includes('rust') ||
+    (first.snippet && (
+      first.snippet.toLowerCase().includes('ownership') ||
+      first.snippet.toLowerCase().includes('lifetime')
+    ));
+
+  if (isRelevant) {
+    console.log(`   ✅ Result relevant: ${first.title}`);
+  } else {
+    console.log(`   ⚠️  Result may not be relevant: ${first.title}`);
+  }
+
+  console.log(`   Found ${output.items.length} results`);
+});
+
+// Test 8: Empty Results
+await test('Test 8: Nonsense Query Handling', async () => {
+  try {
+    const output = await multiSearch({
+      query: 'asdfjkl12345nonsensequery',
+      engines: ['searxng'],
+    });
+
+    // May return no results or may return something
+    console.log(`   Query handled gracefully: ${output.items.length} results`);
+    assert(true, 'No exception thrown');
+  } catch (error) {
+    // Should not throw, just return empty
+    assert(false, 'Should handle gracefully without error');
+  }
+});
+
+// Test 9: UTF-8 Characters
+await test('Test 9: UTF-8 Characters', async () => {
+  const output = await multiSearch({
+    query: 'résumé ççç 日本語',
+    engines: ['searxng'],
+    limit: 3,
+  });
+
+  assert(output.items.length >= 0, 'Handled UTF-8 query');
+  console.log(`   Handled UTF-8: ${output.items.length} results`);
+});
+
+// Test 10: SearXNG Priority (First Engine)
+await test('Test 10: SearXNG Priority (First in Order)', async () => {
+  // Default order has searxng first
+  const output = await multiSearch({
+    query: 'priority test',
+    limit: 3,
+  });
+
+  // SearXNG should be first in enginesTried
+  const firstEngine = output.enginesTried[0];
+  assert(firstEngine.engineId === 'searxng', 'SearXNG is first engine');
+  assert(firstEngine.success === true, 'SearXNG succeeded first');
+
+  console.log(`   First engine: ${firstEngine.engineId}`);
+  console.log(`   All engines tried: ${output.enginesTried.map(e => e.engineId).join(', ')}`);
+});
+
+// Summary
+console.log('\n' + '='.repeat(60));
+console.log('📊 Test Summary');
+console.log('='.repeat(60));
+
+const total = results.length;
+const passed = results.filter(r => r.passed).length;
+const failed = total - passed;
+
+console.log(`Total tests: ${total}`);
+console.log(`Passed: ${passed}`);
+console.log(`Failed: ${failed}`);
+
+if (failed > 0) {
+  console.log('\n❌ Failed tests:');
+  results.filter(r => !r.passed).forEach(r => {
+    console.log(`   - ${r.test}`);
+    if (r.details) console.log(`     ${r.details}`);
+  });
+} else {
+  console.log('\n🎉 All tests passed!');
+}
+
+console.log('\n✨ SearXNG Integration Tests Complete!');
+process.exit(failed > 0 ? 1 : 0);

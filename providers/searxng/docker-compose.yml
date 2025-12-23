@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  searxng:
+    image: docker.io/searxng/searxng:latest
+    container_name: searxng
+    ports:
+      - "8888:8080"
+    environment:
+      # SearXNG configuration options
+      - SEARXNG_BIND_ADDRESS=0.0.0.0:8080
+      - SEARXNG_SECRET_KEY=${SEARXNG_SECRET_KEY:-changeme}
+      - SEARXNG_DEBUG=false
+      # Enable JSON API
+      - SEARXNG_ENABLE_JSON_API=true
+    volumes:
+      - ./config:/etc/searxng:rw
+      - ./data:/var/cache/searxng:rw
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Optional: Redis cache for better performance
+  redis:
+    image: redis:7-alpine
+    container_name: searxng-redis
+    command: redis-server --save '' --appendonly no
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  redis-data:
