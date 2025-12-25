@@ -12,7 +12,19 @@ import type { MultiSearchOutput } from "./tool/interface";
 import { getCreditStatus, multiSearch } from "./tool/multiSearchTool";
 
 // Parse command line arguments
-const args = process.argv.slice(2);
+let args = process.argv.slice(2);
+
+// Parse --config first and remove from args (global option that can appear anywhere)
+const configIdx = args.indexOf("--config");
+let configPath: string | undefined;
+if (configIdx !== -1) {
+  configPath = args[configIdx + 1];
+  if (!configPath || configPath.startsWith("--")) {
+    console.error("Error: --config requires a file path");
+    process.exit(1);
+  }
+  args.splice(configIdx, 2);
+}
 
 // Show help
 if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
@@ -34,6 +46,7 @@ OPTIONS:
     --strategy <strategy>       Search strategy: 'all' or 'first-success' (default: all)
     --limit <number>            Maximum results per engine
     --include-raw               Include raw provider responses
+    --config <path>             Path to configuration file
     --help, -h                  Show this help message
 
 EXAMPLES:
@@ -42,6 +55,8 @@ EXAMPLES:
     multi-search "hawaii dev meetups" --strategy first-success
     multi-search credits
     multi-search health
+    multi-search --config /path/to/config.json credits
+    multi-search "query" --config /path/to/config.json
 
 CONFIGURATION:
     Config files are searched in order:
@@ -59,13 +74,13 @@ ENVIRONMENT:
 
 // Credits command
 if (args[0] === "credits") {
-  await showCredits();
+  await showCredits(configPath);
   process.exit(0);
 }
 
 // Health check command
 if (args[0] === "health") {
-  await runHealthChecks();
+  await runHealthChecks(configPath);
   process.exit(0);
 }
 
@@ -115,7 +130,7 @@ if (limitIdx !== -1) {
 
 // Extract query (non-option arguments)
 // Filter out option flags (--*) and their values
-const optionsWithValues = ["--engines", "--strategy", "--limit"];
+const optionsWithValues = ["--engines", "--strategy", "--limit", "--config"];
 const queryParts = args.filter((arg, idx) => {
   // Skip arguments starting with --
   if (arg.startsWith("--")) {
@@ -145,15 +160,18 @@ if (!query) {
 async function main() {
   try {
     // Bootstrap the DI container
-    const _container = await bootstrapContainer();
+    const _container = await bootstrapContainer(configPath);
 
-    const result = await multiSearch({
-      query,
-      limit: options.limit,
-      engines: options.engines,
-      includeRaw: options.includeRaw,
-      strategy: options.strategy,
-    });
+    const result = await multiSearch(
+      {
+        query,
+        limit: options.limit,
+        engines: options.engines,
+        includeRaw: options.includeRaw,
+        strategy: options.strategy,
+      },
+      configPath,
+    );
 
     if (options.json) {
       console.log(JSON.stringify(result, null, 2));
@@ -245,10 +263,10 @@ function printHumanReadable(result: MultiSearchOutput) {
 /**
  * Run health checks on all providers
  */
-async function runHealthChecks() {
+async function runHealthChecks(configPath?: string) {
   try {
     // Bootstrap the DI container
-    const container = await bootstrapContainer();
+    const container = await bootstrapContainer(configPath);
     const registry = container.get<ProviderRegistry>(ServiceKeys.PROVIDER_REGISTRY);
     const providers = registry.list();
 
@@ -322,9 +340,9 @@ async function runHealthChecks() {
 /**
  * Show credit status
  */
-async function showCredits() {
+async function showCredits(configPath?: string) {
   try {
-    const credits = await getCreditStatus();
+    const credits = await getCreditStatus(configPath);
 
     if (!credits || credits.length === 0) {
       console.log("No credits configured or no engines enabled.");

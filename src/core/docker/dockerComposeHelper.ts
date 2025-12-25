@@ -7,6 +7,7 @@
 import { exec } from "node:child_process";
 import { existsSync } from "node:fs";
 import { promisify } from "node:util";
+import { getSearxngPaths } from "../paths";
 
 const execAsync = promisify(exec);
 
@@ -33,10 +34,17 @@ export class DockerComposeHelper {
     const timeout = options.timeout || 30000;
 
     try {
+      // Get SearXNG paths and ensure directories exist
+      const { configDir, dataDir } = getSearxngPaths();
+
       const { stdout, stderr } = await execAsync(cmd, {
         cwd,
         timeout,
-        env: { ...process.env },
+        env: {
+          ...process.env,
+          SEARXNG_CONFIG: configDir,
+          SEARXNG_DATA: dataDir,
+        },
       });
 
       if (stderr && !stderr.includes("warning")) {

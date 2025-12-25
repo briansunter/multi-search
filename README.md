@@ -5,6 +5,7 @@ Unified, Bun-first search interface across multiple providers with credit tracki
 ## Highlights
 
 - 🔍 Providers: Tavily, Brave, Linkup, SearXNG (local, Docker auto-start)
+- 🔌 Extensible: Add custom providers via TypeScript plugin system
 - 🤝 Single interface: shared types + CLI + programmatic API
 - 💳 Credits: per-engine quotas with snapshots and low-credit warnings
 - 🧠 Strategies: `all` (merge) or `first-success` (fastest win)
@@ -20,8 +21,8 @@ bun install
 # CLI (direct)
 bun run src/cli.ts "best TypeScript ORM 2025"
 
-# Or link the bin
-ln -s $(pwd)/src/cli.ts ~/.local/bin/multi-search
+# Or use bun link (works from any directory)
+bun link
 multi-search "llm observability" --json
 ```
 
@@ -67,13 +68,139 @@ multi-search credits
 ## Configuration
 
 Resolution order (first wins):
-1. Explicit path passed to CLI/API
-2. `./multi-search.config.(ts|json)`
-3. `$XDG_CONFIG_HOME/multi-search/config.(ts|json)` (or `~/.config/...`)
+1. Explicit path passed to CLI/API (`--config /path/to/config.json`)
+2. `./multi-search.config.(ts|json)` (current directory)
+3. `$XDG_CONFIG_HOME/multi-search/config.(ts|json)` (default: `~/.config/multi-search/`)
+
+### XDG Directory Structure
+
+```
+~/.config/multi-search/
+├── config.json              # Main configuration
+└── searxng/
+    └── config/
+        └── settings.yml     # SearXNG settings (auto-copied on first run)
+
+~/.local/share/multi-search/
+└── searxng/
+    └── data/                # SearXNG cache (auto-created)
+```
 
 - Example config: see `docs/config/multi-search.config.json`
 - Schema: `docs/config/config.schema.json` (generated from Zod)
 - TS helper: `defineConfig`, `defineTavily`, `defineBrave`, `defineLinkup`, `defineSearchxng`
+
+### SearXNG Configuration
+
+SearXNG uses Docker with volumes mounted to XDG directories. On first run, the default `settings.yml` is copied to `~/.config/multi-search/searxng/config/`. You can customize this file to:
+- Enable/disable search engines
+- Adjust rate limiting
+- Configure output formats
+
+## Custom Providers
+
+Add your own search providers using the plugin system.
+
+### TypeScript Config with Custom Provider
+
+```typescript
+// ~/.config/multi-search/config.ts
+import { defineConfig, definePlugin } from "multi-search/config";
+
+// 1. Define your provider class
+class PerplexityProvider {
+  constructor(private config: any) {}
+
+  get id() { return this.config.id; }
+
+  async search(query: { query: string; limit?: number }) {
+    const response = await fetch("https://api.perplexity.ai/search", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env[this.config.apiKeyEnv]}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query: query.query }),
+    });
+    const data = await response.json();
+
+    return {
+      engineId: this.id,
+      items: data.results.map((r: any) => ({
+        title: r.title,
+        url: r.url,
+        snippet: r.snippet,
+        sourceEngine: this.id,
+      })),
+    };
+  }
+}
+
+// 2. Create the plugin
+const perplexityPlugin = definePlugin({
+  type: "perplexity",
+  displayName: "Perplexity AI",
+  hasLifecycle: false,
+  factory: (config) => new PerplexityProvider(config),
+});
+
+// 3. Export config with plugin
+export default defineConfig({
+  plugins: [perplexityPlugin],
+  defaultEngineOrder: ["perplexity", "searxng"],
+  engines: [
+    {
+      id: "perplexity",
+      type: "perplexity",  // matches plugin type
+      enabled: true,
+      apiKeyEnv: "PERPLEXITY_API_KEY",
+      endpoint: "https://api.perplexity.ai/search",
+      monthlyQuota: 1000,
+      creditCostPerSearch: 1,
+      lowCreditThresholdPercent: 10,
+    },
+    // ... other engines
+  ],
+});
+```
+
+### Provider Interface
+
+Your provider must implement:
+
+```typescript
+interface ISearchProvider {
+  id: string;
+  search(query: SearchQuery): Promise<SearchResponse>;
+}
+
+interface SearchQuery {
+  query: string;
+  limit?: number;
+  includeRaw?: boolean;
+}
+
+interface SearchResponse {
+  engineId: string;
+  items: SearchResultItem[];
+  raw?: unknown;
+  tookMs?: number;
+}
+
+interface SearchResultItem {
+  title: string;
+  url: string;
+  snippet: string;
+  score?: number;
+  sourceEngine: string;
+}
+```
+
+### Plugin Helpers
+
+- `definePlugin({ type, displayName, hasLifecycle, factory })` - Create a plugin
+- `defineConfig({ plugins, engines, ... })` - Config with plugins
+- `defineEngine<T>(config)` - Type-safe custom engine config
 
 ## Architecture (short)
 
@@ -166,10 +293,30 @@ src/
 ├── bootstrap/            # DI container wiring
 ├── config/               # Config types, schema, loaders
 ├── core/                 # Orchestrator, strategy, credits, docker helpers
+│   ├── docker/           # Docker compose helper, lifecycle manager
+│   ├── paths.ts          # XDG path utilities
+│   └── ...
 ├── plugin/               # Plugin registry and built-ins
 ├── providers/            # Provider implementations + shared helpers
 ├── tool/                 # CLI-facing tool + interfaces
 └── cli.ts                # CLI entry
+
+providers/
+└── searxng/
+    ├── docker-compose.yml  # SearXNG Docker config (uses env var volumes)
+    └── config/
+        └── settings.yml    # Default SearXNG settings (copied to XDG on first run)
+```
+
+### Building
+
+```bash
+# Bundle to dist/
+bun run build
+
+# Creates:
+# dist/cli.js              - Bundled CLI
+# dist/providers/searxng/  - Docker compose + default settings
 ```
 
 ### Testing (Bun)
@@ -183,14 +330,24 @@ See `docs/testing/README.md` for suite layout.
 
 ## Troubleshooting
 
-- Missing config: copy `docs/config/multi-search.config.json` to your project root (or place in XDG path)
-- Missing API key: set `TAVILY_API_KEY`, `BRAVE_API_KEY`, `LINKUP_API_KEY`, `SEARXNG_API_KEY`
-- SearXNG not healthy: ensure Docker is running, or disable/autoStart=false for that engine
+- **Missing config**: Copy `docs/config/multi-search.config.json` to `~/.config/multi-search/config.json`
+- **Missing API key**: Set `TAVILY_API_KEY`, `BRAVE_API_KEY`, `LINKUP_API_KEY` environment variables
+- **SearXNG not healthy**: Ensure Docker is running. Check `~/.config/multi-search/searxng/config/settings.yml` exists
+- **SearXNG settings missing**: Run `multi-search health` once to bootstrap default config to XDG directory
+- **Path issues after bun link**: The CLI resolves paths relative to XDG directories, not the working directory
 
 ## Environment Variables
 
-- Required per enabled engine: `TAVILY_API_KEY`, `BRAVE_API_KEY`, `LINKUP_API_KEY`, `SEARXNG_API_KEY`
-- Optional: `XDG_CONFIG_HOME`, `XDG_STATE_HOME`
+### API Keys (required per enabled engine)
+- `TAVILY_API_KEY` - Tavily search API
+- `BRAVE_API_KEY` - Brave search API
+- `LINKUP_API_KEY` - Linkup search API
+- `SEARXNG_API_KEY` - Optional (SearXNG is local, no key needed by default)
+
+### XDG Directories (optional)
+- `XDG_CONFIG_HOME` - Config directory (default: `~/.config`)
+- `XDG_DATA_HOME` - Data directory (default: `~/.local/share`)
+- `XDG_STATE_HOME` - State directory (default: `~/.local/state`)
 
 ## License
 

@@ -8,6 +8,9 @@ await Bun.build({
   sourcemap: "external",
 });
 
-await $`cp -r providers/searxng dist/providers/`;
+// Copy only essential SearXNG files (docker-compose.yml and default config)
+await $`mkdir -p dist/providers/searxng/config`;
+await $`cp providers/searxng/docker-compose.yml dist/providers/searxng/`;
+await $`cp providers/searxng/config/settings.yml dist/providers/searxng/config/`;
 
 console.log("Build complete! Run with: bun dist/cli.js");

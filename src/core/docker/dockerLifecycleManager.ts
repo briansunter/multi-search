@@ -21,6 +21,7 @@
  */
 
 import { createLogger } from "../logger";
+import { bootstrapSearxngConfig } from "../paths";
 import { DockerComposeHelper } from "./dockerComposeHelper";
 
 const log = createLogger("DockerLifecycle");
@@ -98,6 +99,9 @@ export class DockerLifecycleManager {
     if (!this.dockerHelper) {
       return;
     }
+
+    // Bootstrap SearXNG config if needed (copy default settings.yml)
+    bootstrapSearxngConfig();
 
     // Check if Docker is available (with timeout)
     const dockerAvailable = await this.withTimeout(

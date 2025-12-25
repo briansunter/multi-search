@@ -11,9 +11,9 @@
  * 3. XDG config ($XDG_CONFIG_HOME/multi-search/config.{ts,json})
  */
 
-import { dirname, join } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
+import { dirname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PluginRegistry, registerBuiltInPlugins } from "../plugin";
 import type { ConfigFactory, ExtendedSearchConfig } from "./defineConfig";
@@ -131,6 +131,44 @@ function loadJsonConfig(path: string): ExtendedSearchConfig {
 }
 
 /**
+ * Resolve relative paths in config to absolute paths
+ * This ensures paths like ./providers/searxng/docker-compose.yml work
+ * when running from any directory
+ *
+ * @param config - The loaded configuration
+ * @param configFilePath - The absolute path to the config file
+ * @returns Config with resolved absolute paths
+ */
+function resolveConfigPaths(
+  config: ExtendedSearchConfig,
+  configFilePath: string,
+): ExtendedSearchConfig {
+  // Handle empty or malformed config
+  if (!config.engines || !Array.isArray(config.engines)) {
+    return config;
+  }
+
+  const configDir = dirname(configFilePath);
+
+  return {
+    ...config,
+    engines: config.engines.map((engine) => {
+      // Check if engine has composeFile property (SearXNG type)
+      if ("composeFile" in engine && engine.composeFile) {
+        // Only resolve if it's a relative path
+        if (!isAbsolute(engine.composeFile)) {
+          return {
+            ...engine,
+            composeFile: join(configDir, engine.composeFile),
+          };
+        }
+      }
+      return engine;
+    }),
+  };
+}
+
+/**
  * Options for loading configuration
  */
 export interface LoadConfigOptions {
@@ -219,6 +257,10 @@ export async function loadConfig(
         );
       }
 
+      // Resolve relative paths (like composeFile) to absolute paths
+      // based on the config file's directory
+      rawConfig = resolveConfigPaths(rawConfig, path);
+
       // Skip validation if explicitly requested (useful for testing)
       if (!skipValidation) {
         // Validate configuration against schema
@@ -283,7 +325,7 @@ export function loadConfigSync(
         continue;
       }
 
-      let rawConfig: unknown;
+      let rawConfig: ExtendedSearchConfig;
 
       try {
         rawConfig = loadJsonConfig(path);
@@ -293,8 +335,11 @@ export function loadConfigSync(
         );
       }
 
+      // Resolve relative paths (like composeFile) to absolute paths
+      rawConfig = resolveConfigPaths(rawConfig, path);
+
       if (options.skipValidation) {
-        return rawConfig as ExtendedSearchConfig;
+        return rawConfig;
       }
 
       const result = validateConfigSafe(rawConfig);
