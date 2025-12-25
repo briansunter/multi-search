@@ -52,7 +52,10 @@
     "mcp": "bun run mcp-server.ts",
     "mcp:test": "bun run scripts/test-mcp.ts",
     "build": "bun run scripts/build.ts",
-    "build:binary": "bun build --compile --minify src/cli.ts --outfile dist/ubersearch"
+    "build:binary": "bun build --compile --minify src/cli.ts --outfile dist/ubersearch",
+    "semantic-release": "semantic-release",
+    "semantic-release:dry-run": "semantic-release --dry-run",
+    "release": "bun run build && bun run semantic-release"
   },
   "repository": {
     "type": "git",

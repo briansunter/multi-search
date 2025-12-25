@@ -4,9 +4,10 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:  # Allow manual triggering
 
 permissions:
-  contents: read
+  contents: write  # Required for creating GitHub releases
   id-token: write  # Required for OIDC token
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
@@ -20,29 +21,37 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bb29b9135875211b2c1732a2d27bf15 # v4.2.2
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Full git history for semantic-release
 
-      - name: Setup Node.js
-        uses: actions/setup-node@3931e90f200f6abe1b0234c164f3368cf3dcada4 # v4.1.1
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 'lts/*'
-          registry-url: 'https://registry.npmjs.org'
+          bun-version: latest
 
-      # Workaround: Install npm CLI to use with semantic-release
-      # This ensures OIDC works properly even if using Bun locally
-      - name: Ensure npm is available
-        run: |
-          npm install -g npm@latest
-          npm --version
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
+
+      - name: Run linting
+        run: bun run lint
 
       - name: Run tests
-        run: npm test
+        run: bun run test
 
-      - name: Publish to npm
-        run: npx semantic-release
+      - name: Build package
+        run: bun run build
+
+      - name: Publish to npm (dry-run)
+        run: bunx semantic-release --dry-run
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
