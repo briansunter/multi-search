@@ -336,13 +336,33 @@ See `docs/testing/README.md` for suite layout.
 - **SearXNG settings missing**: Run `multi-search health` once to bootstrap default config to XDG directory
 - **Path issues after bun link**: The CLI resolves paths relative to XDG directories, not the working directory
 
+## Providers
+
+| Provider | Type | API Key Required | Free Tier | Notes |
+|----------|------|------------------|-----------|-------|
+| **SearXNG** | `searchxng` | No | Unlimited (local) | Self-hosted, Docker auto-start |
+| **Tavily** | `tavily` | Yes | 1000/month | Best for AI/research queries |
+| **Brave** | `brave` | Yes | 2000/month | General web search |
+| **Linkup** | `linkup` | Yes | 1000/month | AI-powered search |
+
+### Getting API Keys
+
+- **Tavily**: https://tavily.com/ → Sign up → Dashboard → API Keys
+- **Brave**: https://brave.com/search/api/ → Get Started → Create App
+- **Linkup**: https://linkup.so/ → Sign up → API Keys
+- **SearXNG**: No key needed (runs locally via Docker)
+
 ## Environment Variables
 
 ### API Keys (required per enabled engine)
-- `TAVILY_API_KEY` - Tavily search API
-- `BRAVE_API_KEY` - Brave search API
-- `LINKUP_API_KEY` - Linkup search API
-- `SEARXNG_API_KEY` - Optional (SearXNG is local, no key needed by default)
+
+```bash
+# Add to ~/.bashrc, ~/.zshrc, or use a secrets manager
+export TAVILY_API_KEY="tvly-..."      # From tavily.com dashboard
+export BRAVE_API_KEY="BSA..."          # From brave.com/search/api
+export LINKUP_API_KEY="xxxxxxxx-..."   # UUID from linkup.so
+# SEARXNG_API_KEY not needed (local Docker)
+```
 
 ### XDG Directories (optional)
 - `XDG_CONFIG_HOME` - Config directory (default: `~/.config`)
