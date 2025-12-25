@@ -52,18 +52,10 @@ jobs:
       - name: Build package
         run: bun run build
 
-      - name: Create .npmrc for OIDC
-        run: |
-          # Create .npmrc that semantic-release will accept
-          # npm will use OIDC token automatically via provenance
-          echo "registry=https://registry.npmjs.org/" > .npmrc
-          # Add a placeholder that makes semantic-release's validation pass
-          # npm will ignore this and use OIDC instead
-          echo "//registry.npmjs.org/:_authToken=\${NODE_AUTH_TOKEN:--placeholder}" >> .npmrc
-
       - name: Publish to npm
         run: bunx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
 
