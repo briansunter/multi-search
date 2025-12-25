@@ -52,10 +52,15 @@ jobs:
       - name: Build package
         run: bun run build
 
+      - name: Configure npm for OIDC
+        run: |
+          echo "npm config set //registry.npmjs.org/:_authToken=\${NODE_AUTH_TOKEN}"
+          echo "NPM_TOKEN=\${NODE_AUTH_TOKEN}" >> $GITHUB_ENV
+
       - name: Publish to npm
         run: bunx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_CONFIG_PROVENANCE: true
           NODE_AUTH_TOKEN: ${{ secrets.npm_token }}
+          NPM_CONFIG_PROVENANCE: true
 
