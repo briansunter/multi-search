@@ -52,8 +52,8 @@ jobs:
       - name: Build package
         run: bun run build
 
-      - name: Publish to npm (dry-run)
-        run: bunx semantic-release --dry-run
+      - name: Publish to npm
+        run: bunx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
