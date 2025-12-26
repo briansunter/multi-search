@@ -6,4 +6,3 @@ export * from "./AllProvidersStrategy";
 export * from "./FirstSuccessStrategy";
 export * from "./ISearchStrategy";
 export * from "./StrategyFactory";
-export * from "./types";

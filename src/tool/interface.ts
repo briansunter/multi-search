@@ -24,6 +24,9 @@ export interface UberSearchInput {
    * When false (default), providers are queried sequentially
    */
   parallel?: boolean;
+
+  /** SearXNG categories to search (e.g., ["general", "it", "science"]) */
+  categories?: string[];
 }
 
 export interface UberSearchEngineAttempt {

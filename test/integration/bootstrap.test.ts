@@ -56,8 +56,13 @@ const mockConfig: UberSearchConfig = {
 
 describe("bootstrapContainer", () => {
   let container: Container | null;
+  const originalEnv = { ...process.env };
 
   beforeEach(() => {
+    // Set mock API keys for tests
+    process.env.TAVILY_API_KEY = "test-tavily-key";
+    process.env.BRAVE_API_KEY = "test-brave-key";
+
     // Reset plugin registry for isolated tests
     ProviderFactory.reset();
     PluginRegistry.resetInstance();
@@ -75,6 +80,9 @@ describe("bootstrapContainer", () => {
     await registry.clear();
     PluginRegistry.resetInstance();
     ProviderFactory.reset();
+
+    // Restore original environment
+    process.env = { ...originalEnv };
   });
 
   test("should bootstrap container with all services", async () => {
@@ -160,9 +168,7 @@ describe("bootstrapContainer", () => {
       engines: [],
     };
 
-    await expect(bootstrapContainer(emptyConfig)).rejects.toThrow(
-      "No search providers available",
-    );
+    await expect(bootstrapContainer(emptyConfig)).rejects.toThrow("No search providers available");
   });
 
   test("should throw error when all providers fail", async () => {
@@ -205,8 +211,13 @@ describe("bootstrapContainer", () => {
 
 describe("Container Service Resolution", () => {
   let container: Container | null;
+  const originalEnv = { ...process.env };
 
   beforeEach(async () => {
+    // Set mock API keys for tests
+    process.env.TAVILY_API_KEY = "test-tavily-key";
+    process.env.BRAVE_API_KEY = "test-brave-key";
+
     // Reset plugin registry for isolated tests
     ProviderFactory.reset();
     PluginRegistry.resetInstance();
@@ -226,6 +237,9 @@ describe("Container Service Resolution", () => {
     await registry.clear();
     PluginRegistry.resetInstance();
     ProviderFactory.reset();
+
+    // Restore original environment
+    process.env = { ...originalEnv };
   });
 
   test("should resolve singleton services correctly", async () => {

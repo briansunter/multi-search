@@ -64,6 +64,7 @@ export class FirstSuccessStrategy implements ISearchStrategy {
           query,
           limit: options.limit,
           includeRaw: options.includeRaw,
+          categories: options.categories,
         });
 
         // Deduct credits

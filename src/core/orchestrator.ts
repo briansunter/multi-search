@@ -23,6 +23,9 @@ export interface UberSearchOptions {
 
   /** Search strategy */
   strategy?: "all" | "first-success";
+
+  /** SearXNG categories to search (e.g., ["general", "it", "science"]) */
+  categories?: string[];
 }
 
 export interface EngineAttempt {
@@ -54,12 +57,13 @@ export class UberSearchOrchestrator {
 
   /**
    * Determine the engine order to use for this search
+   * Only includes engines that are actually registered in the provider registry
    */
   private getEngineOrder(override?: EngineId[]): EngineId[] {
-    if (override?.length) {
-      return override;
-    }
-    return this.config.defaultEngineOrder;
+    const baseOrder = override?.length ? override : this.config.defaultEngineOrder;
+
+    // Filter to only include engines that are registered (have valid providers)
+    return baseOrder.filter((engineId) => this.registry.get(engineId) !== undefined);
   }
 
   /**

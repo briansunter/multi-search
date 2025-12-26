@@ -55,6 +55,7 @@ export async function uberSearch(
     engineOrderOverride: input.engines,
     includeRaw: input.includeRaw,
     strategy: input.strategy ?? "all",
+    categories: input.categories,
   });
 
   // Format output

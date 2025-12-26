@@ -8,6 +8,8 @@ export interface SearchQuery {
   query: string;
   limit?: number;
   includeRaw?: boolean;
+  /** SearXNG categories to search (e.g., "general", "it", "science") */
+  categories?: string[];
 }
 
 export interface SearchResultItem {

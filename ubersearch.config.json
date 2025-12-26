@@ -9,7 +9,7 @@
       "displayName": "SearXNG (Local)",
       "apiKeyEnv": "SEARXNG_API_KEY",
       "endpoint": "http://localhost:8888/search",
-      "defaultLimit": 10,
+      "defaultLimit": 15,
       "monthlyQuota": 10000,
       "creditCostPerSearch": 0,
       "lowCreditThresholdPercent": 0,
@@ -39,7 +39,7 @@
       "displayName": "Brave Search",
       "apiKeyEnv": "BRAVE_API_KEY",
       "endpoint": "https://api.search.brave.com/res/v1/web/search",
-      "defaultLimit": 10,
+      "defaultLimit": 15,
       "monthlyQuota": 1000,
       "creditCostPerSearch": 1,
       "lowCreditThresholdPercent": 80

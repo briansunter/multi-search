@@ -21,7 +21,7 @@ export class BraveProvider extends BaseProvider<BraveConfig> {
   async search(query: SearchQuery): Promise<SearchResponse> {
     const apiKey = this.getApiKey();
 
-    const limit = query.limit ?? this.config.defaultLimit ?? 10;
+    const limit = query.limit ?? this.config.defaultLimit ?? 15;
     const url = buildUrl(this.config.endpoint, {
       q: query.query,
       count: limit,

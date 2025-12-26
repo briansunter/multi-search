@@ -43,20 +43,27 @@ ARGUMENTS:
 OPTIONS:
     --json                      Output results as JSON
     --engines <engine,list>     Use specific engines (comma-separated)
+    --categories <cat,list>     SearXNG categories (comma-separated)
     --strategy <strategy>       Search strategy: 'all' or 'first-success' (default: all)
     --limit <number>            Maximum results per engine
     --include-raw               Include raw provider responses
     --config <path>             Path to configuration file
     --help, -h                  Show this help message
 
+CATEGORIES (SearXNG):
+    general     Web search (brave, duckduckgo, startpage, qwant)
+    it          Tech (github, stackoverflow, npm, pypi, huggingface)
+    science     Academic (arxiv, google_scholar)
+    news        News (hackernews, reddit, bbc)
+    videos      Video (youtube)
+
 EXAMPLES:
     ubersearch "best TypeScript ORM 2025"
     ubersearch "llm observability" --engines tavily,brave --json
+    ubersearch "typescript error" --categories it
+    ubersearch "machine learning" --categories science,it
     ubersearch "hawaii dev meetups" --strategy first-success
     ubersearch credits
-    ubersearch health
-    ubersearch --config /path/to/config.json credits
-    ubersearch "query" --config /path/to/config.json
 
 CONFIGURATION:
     Config files are searched in order:
@@ -91,6 +98,7 @@ const options = {
   engines: undefined as string[] | undefined,
   strategy: undefined as "all" | "first-success" | undefined,
   limit: undefined as number | undefined,
+  categories: undefined as string[] | undefined,
 };
 
 // Parse --engines
@@ -128,9 +136,18 @@ if (limitIdx !== -1) {
   }
 }
 
+// Parse --categories
+const categoriesIdx = args.indexOf("--categories");
+if (categoriesIdx !== -1) {
+  const categoriesArg = args[categoriesIdx + 1];
+  if (categoriesArg !== undefined) {
+    options.categories = categoriesArg.split(",").map((c) => c.trim());
+  }
+}
+
 // Extract query (non-option arguments)
 // Filter out option flags (--*) and their values
-const optionsWithValues = ["--engines", "--strategy", "--limit", "--config"];
+const optionsWithValues = ["--engines", "--strategy", "--limit", "--config", "--categories"];
 const queryParts = args.filter((arg, idx) => {
   // Skip arguments starting with --
   if (arg.startsWith("--")) {
@@ -169,6 +186,7 @@ async function main() {
         engines: options.engines,
         includeRaw: options.includeRaw,
         strategy: options.strategy,
+        categories: options.categories,
       },
       { containerOverride: container },
     );

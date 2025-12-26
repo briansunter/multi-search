@@ -82,6 +82,17 @@ export async function serve() {
             description: "Maximum results per engine",
             default: 10,
           },
+          categories: {
+            type: "string",
+            description: `SearXNG categories (comma-separated). Available categories:
+- general: Web search (brave, duckduckgo, startpage, qwant)
+- it: Tech (github, stackoverflow, npm, pypi, huggingface)
+- science: Academic (arxiv, google_scholar)
+- news: News (hackernews, reddit, bbc)
+- videos: Video (youtube)
+Example: "it,science" for tech and academic results`,
+            default: "",
+          },
         },
         required: ["query"],
       },
@@ -165,12 +176,16 @@ export async function serve() {
           const engines = args.engines
             ? args.engines.split(",").map((e: string) => e.trim())
             : undefined;
+          const categories = args.categories
+            ? args.categories.split(",").map((c: string) => c.trim())
+            : undefined;
           result = await withTimeout(
             uberSearch({
               query: args.query,
               limit: args.limit,
               engines,
               strategy: args.strategy,
+              categories,
             }),
             60000,
             "uberSearch",

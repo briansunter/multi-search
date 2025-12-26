@@ -102,13 +102,20 @@ export class SearchxngProvider
     }
 
     const limit = query.limit ?? this.defaultLimit;
-    const url = buildUrl(this.config.endpoint, {
+    const params: Record<string, string | number> = {
       q: query.query,
       format: "json",
       language: "all",
       pageno: 1,
       safesearch: 0,
-    });
+    };
+
+    // Add categories if specified (e.g., "general,it,science")
+    if (query.categories && query.categories.length > 0) {
+      params.categories = query.categories.join(",");
+    }
+
+    const url = buildUrl(this.config.endpoint, params);
 
     const { data: json, tookMs } = await fetchWithErrorHandling<SearxngApiResponse>(
       this.id,

@@ -119,12 +119,12 @@ export interface PluginDefinition<
 /**
  * Helper type to extract config type from a plugin definition
  */
-export type PluginConfig<T> = T extends PluginDefinition<infer C, unknown> ? C : never;
+export type PluginConfig<T> = T extends PluginDefinition<infer C, SearchProvider> ? C : never;
 
 /**
  * Helper type to extract provider type from a plugin definition
  */
-export type PluginProvider<T> = T extends PluginDefinition<unknown, infer P> ? P : never;
+export type PluginProvider<T> = T extends PluginDefinition<EngineConfigBase, infer P> ? P : never;
 
 /**
  * Registration options when adding a plugin to the registry
@@ -190,7 +190,7 @@ export function isLifecycleProvider(
   if (provider == null || typeof provider !== "object") {
     return false;
   }
-  const obj = provider as Record<string, unknown>;
+  const obj = provider as unknown as Record<string, unknown>;
   return (
     "init" in provider &&
     "healthcheck" in provider &&

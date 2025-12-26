@@ -77,14 +77,14 @@ export const searchxngPlugin: PluginDefinition<SearchxngConfig, SearchxngProvide
 
 /**
  * All built-in plugins
- * Using base types since specific configs/providers extend them
+ * Using type assertion since specific configs/providers extend base types
  */
-export const builtInPlugins: PluginDefinition<EngineConfigBase, SearchProvider>[] = [
+export const builtInPlugins = [
   tavilyPlugin,
   bravePlugin,
   linkupPlugin,
   searchxngPlugin,
-];
+] as unknown as PluginDefinition<EngineConfigBase, SearchProvider>[];
 
 /**
  * Register all built-in plugins with the registry

@@ -181,8 +181,12 @@ describe("CLI Tests", () => {
   describe("Credits Command", () => {
     let testDir: string;
     let originalCwd: string;
+    const originalEnv = { ...process.env };
 
     beforeEach(() => {
+      // Set mock API key for test
+      process.env.TAVILY_API_KEY = "test-tavily-key";
+
       // Create temp directory and config file for credits test
       testDir = join(tmpdir(), `ubersearch-cli-test-${Date.now()}`);
       mkdirSync(testDir, { recursive: true });
@@ -219,6 +223,8 @@ describe("CLI Tests", () => {
       } catch {
         // Ignore cleanup errors
       }
+      // Restore original environment
+      process.env = { ...originalEnv };
     });
 
     test("should execute credits command successfully", async () => {

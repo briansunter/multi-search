@@ -92,6 +92,7 @@ export class AllProvidersStrategy implements ISearchStrategy {
           query,
           limit: options.limit,
           includeRaw: options.includeRaw,
+          categories: options.categories,
         });
 
         // Deduct credits
@@ -175,6 +176,7 @@ export class AllProvidersStrategy implements ISearchStrategy {
             query,
             limit: options.limit,
             includeRaw: options.includeRaw,
+            categories: options.categories,
           });
           return { engineId, response };
         } catch (error) {
@@ -189,7 +191,14 @@ export class AllProvidersStrategy implements ISearchStrategy {
     // Process results in original order (maintain engine priority)
     for (let i = 0; i < searchResults.length; i++) {
       const settledResult = searchResults[i];
-      const { engineId } = eligibleEngines[i];
+      const eligibleEngine = eligibleEngines[i];
+
+      // Safety check (should always exist, but TypeScript needs this)
+      if (!settledResult || !eligibleEngine) {
+        continue;
+      }
+
+      const { engineId } = eligibleEngine;
 
       if (settledResult.status === "rejected") {
         // Promise itself was rejected (shouldn't happen with our try/catch, but handle it)

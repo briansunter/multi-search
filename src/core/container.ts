@@ -127,7 +127,7 @@ export class Container {
 
     // Handle singleton caching
     if (binding.singleton && binding.cached !== undefined) {
-      return binding.cached;
+      return binding.cached as T;
     }
 
     // Track resolution for circular dependency detection
@@ -142,7 +142,7 @@ export class Container {
         binding.cached = instance;
       }
 
-      return instance;
+      return instance as T;
     } catch (error) {
       // Enhance error message with context
       if (error instanceof Error) {
