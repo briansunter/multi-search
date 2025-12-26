@@ -84,7 +84,8 @@ export class SearchxngProvider
           // Re-check health after init attempt
           isHealthy = await this.healthcheck();
         } catch (initError) {
-          console.error(`[SearXNG] Failed to auto-start container:`, initError);
+          const message = initError instanceof Error ? initError.message : String(initError);
+          console.error(`[SearXNG] Failed to auto-start container:`, message);
         }
       }
     }

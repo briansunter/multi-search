@@ -161,7 +161,7 @@ describe("bootstrapContainer", () => {
     };
 
     await expect(bootstrapContainer(emptyConfig)).rejects.toThrow(
-      "No providers could be registered",
+      "No search providers available",
     );
   });
 
@@ -175,7 +175,7 @@ describe("bootstrapContainer", () => {
     };
 
     await expect(bootstrapContainer(allDisabledConfig)).rejects.toThrow(
-      "No providers could be registered",
+      "No search providers available",
     );
   });
 

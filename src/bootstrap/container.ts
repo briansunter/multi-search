@@ -112,9 +112,14 @@ export async function bootstrapContainer(
     const availableProviders = registry.list();
     if (availableProviders.length === 0) {
       const allSkipped = [...failedProviders, ...skippedProviders];
+      const skipDetails = allSkipped.length > 0 ? `Skipped: ${allSkipped.join(", ")}. ` : "";
       throw new Error(
-        `No providers could be registered. Skipped/failed providers: ${allSkipped.join(", ")}. ` +
-          "Check your configuration and environment variables.",
+        `No search providers available. ${skipDetails}\n\n` +
+          "To fix this, either:\n" +
+          "  1. Set an API key: export TAVILY_API_KEY=your-key (or BRAVE_API_KEY, LINKUP_API_KEY)\n" +
+          "  2. Start the SearXNG Docker container: docker compose up -d\n" +
+          "  3. Create a config file: ubersearch.config.json\n\n" +
+          "Get API keys at: https://tavily.com, https://brave.com/search/api, https://linkup.so",
       );
     }
 

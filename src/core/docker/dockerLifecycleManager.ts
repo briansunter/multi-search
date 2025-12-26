@@ -73,7 +73,8 @@ export class DockerLifecycleManager {
     }
 
     this.initPromise = this.performInit().catch((error) => {
-      log.error("Initialization failed:", error);
+      const message = error instanceof Error ? error.message : String(error);
+      log.error("Initialization failed:", message);
       this.initialized = false;
       throw error;
     });
@@ -141,7 +142,8 @@ export class DockerLifecycleManager {
 
       this.initialized = true;
     } catch (error) {
-      log.error("Failed to start container:", error);
+      const message = error instanceof Error ? error.message : String(error);
+      log.error("Failed to start container:", message);
       throw error;
     } finally {
       this.initPromise = null;
@@ -241,7 +243,8 @@ export class DockerLifecycleManager {
       );
       log.info("Container stopped.");
     } catch (error) {
-      log.error("Failed to stop container:", error);
+      const message = error instanceof Error ? error.message : String(error);
+      log.error("Failed to stop container:", message);
       // Don't throw on shutdown errors
     }
   }
@@ -345,7 +348,8 @@ export class DockerLifecycleManager {
         cwd: projectRoot,
       });
     } catch (error) {
-      log.warn("Error checking if container is running:", error);
+      const message = error instanceof Error ? error.message : String(error);
+      log.warn("Error checking if container is running:", message);
       return false;
     }
   }

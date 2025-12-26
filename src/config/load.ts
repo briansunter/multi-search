@@ -203,35 +203,87 @@ export interface LoadConfigOptions {
  */
 /**
  * Get default configuration when no config file is found
- * Uses SearXNG as a sensible default (no API key required)
+ * Prioritizes cloud providers if API keys are set, falls back to SearXNG
  */
 function getDefaultConfig(): ExtendedSearchConfig {
-  const packageRoot = getPackageRoot();
-  const composeFile = join(packageRoot, "providers", "searxng", "docker-compose.yml");
+  const engines: ExtendedSearchConfig["engines"] = [];
+  const defaultEngineOrder: string[] = [];
 
-  return {
-    defaultEngineOrder: ["searchxng"],
-    engines: [
-      {
-        id: "searchxng",
-        type: "searchxng",
-        enabled: true,
-        displayName: "SearXNG (Local)",
-        apiKeyEnv: "SEARXNG_API_KEY",
-        endpoint: "http://localhost:8888/search",
-        composeFile,
-        containerName: "searxng",
-        healthEndpoint: "http://localhost:8888/healthz",
-        defaultLimit: 10,
-        monthlyQuota: 10000,
-        creditCostPerSearch: 0,
-        lowCreditThresholdPercent: 80,
-        autoStart: true,
-        autoStop: true,
-        initTimeoutMs: 60000,
-      },
-    ],
-  };
+  // Add cloud providers if API keys are available (preferred for bunx usage)
+  if (process.env.TAVILY_API_KEY) {
+    defaultEngineOrder.push("tavily");
+    engines.push({
+      id: "tavily",
+      type: "tavily",
+      enabled: true,
+      displayName: "Tavily Search",
+      apiKeyEnv: "TAVILY_API_KEY",
+      endpoint: "https://api.tavily.com/search",
+      searchDepth: "basic",
+      monthlyQuota: 1000,
+      creditCostPerSearch: 1,
+      lowCreditThresholdPercent: 80,
+    });
+  }
+
+  if (process.env.BRAVE_API_KEY) {
+    defaultEngineOrder.push("brave");
+    engines.push({
+      id: "brave",
+      type: "brave",
+      enabled: true,
+      displayName: "Brave Search",
+      apiKeyEnv: "BRAVE_API_KEY",
+      endpoint: "https://api.search.brave.com/res/v1/web/search",
+      defaultLimit: 10,
+      monthlyQuota: 1000,
+      creditCostPerSearch: 1,
+      lowCreditThresholdPercent: 80,
+    });
+  }
+
+  if (process.env.LINKUP_API_KEY) {
+    defaultEngineOrder.push("linkup");
+    engines.push({
+      id: "linkup",
+      type: "linkup",
+      enabled: true,
+      displayName: "Linkup Search",
+      apiKeyEnv: "LINKUP_API_KEY",
+      endpoint: "https://api.linkup.so/v1/search",
+      monthlyQuota: 1000,
+      creditCostPerSearch: 1,
+      lowCreditThresholdPercent: 80,
+    });
+  }
+
+  // If no cloud providers configured, fall back to SearXNG (requires Docker)
+  if (engines.length === 0) {
+    const packageRoot = getPackageRoot();
+    const composeFile = join(packageRoot, "providers", "searxng", "docker-compose.yml");
+
+    defaultEngineOrder.push("searchxng");
+    engines.push({
+      id: "searchxng",
+      type: "searchxng",
+      enabled: true,
+      displayName: "SearXNG (Local)",
+      apiKeyEnv: "SEARXNG_API_KEY",
+      endpoint: "http://localhost:8888/search",
+      composeFile,
+      containerName: "searxng",
+      healthEndpoint: "http://localhost:8888/healthz",
+      defaultLimit: 10,
+      monthlyQuota: 10000,
+      creditCostPerSearch: 0,
+      lowCreditThresholdPercent: 80,
+      autoStart: true,
+      autoStop: true,
+      initTimeoutMs: 60000,
+    });
+  }
+
+  return { defaultEngineOrder, engines };
 }
 
 export async function loadConfig(

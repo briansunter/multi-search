@@ -160,7 +160,7 @@ if (!query) {
 async function main() {
   try {
     // Bootstrap the DI container
-    const _container = await bootstrapContainer(configPath);
+    const container = await bootstrapContainer(configPath);
 
     const result = await uberSearch(
       {
@@ -170,7 +170,7 @@ async function main() {
         includeRaw: options.includeRaw,
         strategy: options.strategy,
       },
-      configPath,
+      { containerOverride: container },
     );
 
     if (options.json) {
