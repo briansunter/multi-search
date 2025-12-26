@@ -46,6 +46,9 @@ describe("BraveProvider", () => {
     });
 
     test("should handle different config values", () => {
+      // Set the custom env var before creating the provider
+      process.env.CUSTOM_BRAVE_KEY = "test-custom-key";
+
       const customConfig = {
         id: "custom-brave",
         displayName: "Custom Brave",
@@ -58,6 +61,9 @@ describe("BraveProvider", () => {
       expect(customProvider.id).toBe("custom-brave");
       const metadata = customProvider.getMetadata();
       expect(metadata.displayName).toBe("Custom Brave");
+
+      // Clean up
+      delete process.env.CUSTOM_BRAVE_KEY;
     });
   });
 

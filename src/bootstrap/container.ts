@@ -82,6 +82,7 @@ export async function bootstrapContainer(
   container.singleton(ServiceKeys.PROVIDER_REGISTRY, () => {
     const registry = new ProviderRegistry();
     const failedProviders: string[] = [];
+    const skippedProviders: string[] = [];
 
     // Register all enabled providers
     for (const engineConfig of config.engines) {
@@ -91,6 +92,14 @@ export async function bootstrapContainer(
 
       try {
         const provider = createProvider(engineConfig);
+
+        // Skip providers that aren't configured (e.g., missing API key)
+        if (!provider.isConfigured()) {
+          log.info(`Skipping provider ${engineConfig.id}: ${provider.getMissingConfigMessage()}`);
+          skippedProviders.push(engineConfig.id);
+          continue;
+        }
+
         registry.register(provider);
         log.info(`Registered provider: ${engineConfig.id}`);
       } catch (error) {
@@ -102,8 +111,9 @@ export async function bootstrapContainer(
 
     const availableProviders = registry.list();
     if (availableProviders.length === 0) {
+      const allSkipped = [...failedProviders, ...skippedProviders];
       throw new Error(
-        `No providers could be registered. Failed providers: ${failedProviders.join(", ")}. ` +
+        `No providers could be registered. Skipped/failed providers: ${allSkipped.join(", ")}. ` +
           "Check your configuration and environment variables.",
       );
     }

@@ -51,6 +51,11 @@ export class SearchxngProvider
     return this.config.apiKeyEnv ?? "";
   }
 
+  // SearXNG doesn't require an API key (it's a local service)
+  protected override requiresApiKey(): boolean {
+    return false;
+  }
+
   override getMetadata(): ProviderMetadata {
     return {
       id: this.id,

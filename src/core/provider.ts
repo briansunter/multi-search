@@ -17,6 +17,10 @@ export interface SearchProvider {
   readonly id: EngineId;
   getMetadata(): ProviderMetadata;
   search(query: SearchQuery): Promise<SearchResponse>;
+  /** Check if the provider is properly configured (e.g., API key is set) */
+  isConfigured(): boolean;
+  /** Get a message explaining what configuration is missing */
+  getMissingConfigMessage(): string;
 }
 
 /**

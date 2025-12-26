@@ -52,6 +52,9 @@ describe("TavilyProvider", () => {
     });
 
     test("should handle different config values", () => {
+      // Set the custom env var before creating the provider
+      process.env.CUSTOM_TAVILY_KEY = "test-custom-key";
+
       const customConfig: any = {
         id: "custom-tavily",
         type: "tavily" as const,
@@ -69,6 +72,9 @@ describe("TavilyProvider", () => {
       expect(customProvider.id).toBe("custom-tavily");
       const metadata = customProvider.getMetadata();
       expect(metadata.displayName).toBe("Custom Tavily");
+
+      // Clean up
+      delete process.env.CUSTOM_TAVILY_KEY;
     });
   });
 
@@ -363,7 +369,10 @@ describe("TavilyProvider", () => {
       );
     });
 
-    test("should throw error when API key environment variable is different", async () => {
+    test("should report not configured when API key environment variable is not set", () => {
+      // Ensure CUSTOM_TAVILY_KEY is not set
+      delete process.env.CUSTOM_TAVILY_KEY;
+
       const customConfig = {
         id: "custom-tavily",
         displayName: "Custom Tavily",
@@ -371,15 +380,12 @@ describe("TavilyProvider", () => {
         searchDepth: "basic" as const,
         endpoint: "https://api.tavily.com/search",
       };
+
       const customProvider = new TavilyProvider(customConfig);
 
-      global.process.env = { TAVILY_API_KEY: "test-key" }; // Wrong key name
-
-      const query: SearchQuery = { query: "test query" };
-
-      await expect(customProvider.search(query)).rejects.toThrow(
-        "Missing environment variable: CUSTOM_TAVILY_KEY",
-      );
+      // Provider should report it's not configured
+      expect(customProvider.isConfigured()).toBe(false);
+      expect(customProvider.getMissingConfigMessage()).toContain("CUSTOM_TAVILY_KEY");
     });
 
     test("should throw error when API key is empty string", async () => {

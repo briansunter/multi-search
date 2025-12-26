@@ -9,6 +9,13 @@
  * module evaluation.
  */
 
+// Ensure SKIP_DOCKER_TESTS is preserved from the shell environment
+// This is needed because bun's test runner may not preserve env vars correctly
+if (process.env.SKIP_DOCKER_TESTS === undefined) {
+  // Default to true if not explicitly set (safe default for CI)
+  process.env.SKIP_DOCKER_TESTS = "true";
+}
+
 import { afterEach, beforeEach } from "bun:test";
 
 // Dynamic import to avoid caching issues

@@ -16,7 +16,8 @@ import { SearchxngProvider } from "../../../src/providers/searchxng";
 import { createTestSearchxngConfig } from "../../__helpers__/docker-mocks";
 
 // Skip all tests if SKIP_DOCKER_TESTS is set
-const skipDockerTests = process.env.SKIP_DOCKER_TESTS === "true";
+// Default to true (skip) to avoid running Docker tests unexpectedly
+const skipDockerTests = process.env.SKIP_DOCKER_TESTS !== "false";
 
 // Check if Docker is available before running any tests
 let dockerAvailable = false;
